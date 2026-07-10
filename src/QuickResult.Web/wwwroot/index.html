@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickResult — Result monad for C# with full LINQ query syntax</title>
+    <meta name="description" content="QuickResult is a lightweight, zero-dependency Result monad for C# and .NET with full LINQ query syntax for sync, async, and mixed flows. Try it live in your browser." />
+    <base href="/" />
+    <link rel="preload" id="webassembly" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="QuickResult.Web.styles.css" rel="stylesheet" />
+    <script type="importmap"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div class="app-loading">
+            <div class="app-loading-mark">R&lt;T&gt;</div>
+            <div class="app-loading-text">Loading QuickResult…</div>
+            <svg class="loading-progress"><circle r="40%" cx="50%" cy="50%" /><circle r="40%" cx="50%" cy="50%" /></svg>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        Something went wrong. This site returns Results, not exceptions — please
+        <a href="." class="reload">reload</a>.
+        <span class="dismiss">✕</span>
+    </div>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+
+</html>

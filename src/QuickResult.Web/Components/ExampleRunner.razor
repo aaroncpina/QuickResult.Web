@@ -1,0 +1,67 @@
+<section class="example" id="@Example.Id">
+    <h3 class="example-title">@Example.Title</h3>
+    <p class="example-description">@Example.Description</p>
+
+    <CodeBlock Code="@Example.SourceCode" />
+
+    <div class="example-controls">
+        @foreach (var input in Example.Inputs)
+        {
+            <label class="example-input">
+                <span class="example-input-label">@input.Label</span>
+                <input data-input-name="@input.Name"
+                       value="@_values[input.Name]"
+                       @onchange="e => _values[input.Name] = e.Value?.ToString() ?? string.Empty" />
+            </label>
+        }
+        <button class="run-button" @onclick="RunAsync" disabled="@_running">
+            @(_running ? "Running…" : "▶ Run")
+        </button>
+    </div>
+
+    @if (_output is not null)
+    {
+        <div class="example-output" aria-live="polite">
+            <div class="output-label">Output</div>
+            @foreach (var line in _output)
+            {
+                <div class="output-line @LineClass(line)">@line</div>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public IExample Example { get; set; } = default!;
+
+    private Dictionary<string, string> _values = new();
+    private IReadOnlyList<string>? _output;
+    private bool _running;
+
+    protected override void OnParametersSet()
+    {
+        _values = Example.Inputs.ToDictionary(i => i.Name, i => i.DefaultValue);
+        _output = null;
+    }
+
+    private async Task RunAsync()
+    {
+        _running = true;
+        try
+        {
+            _output = await Example.RunAsync(new ExampleArguments(_values));
+        }
+        finally
+        {
+            _running = false;
+        }
+    }
+
+    private static string LineClass(string line) =>
+        line.StartsWith("Failure(", StringComparison.Ordinal) || line.Contains(": Failure(")
+            ? "output-failure"
+            : line.StartsWith("Success(", StringComparison.Ordinal) || line.Contains(": Success(")
+                ? "output-success"
+                : string.Empty;
+}

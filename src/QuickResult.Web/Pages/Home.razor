@@ -1,0 +1,113 @@
+@page "/"
+@inject IExampleRegistry Registry
+
+<PageTitle>QuickResult — Result monad for C# with full LINQ query syntax</PageTitle>
+
+<div class="hero">
+    <h1>Handle failure like it's <em>data</em>.<br />Because it is.</h1>
+    <p class="hero-tagline">
+        QuickResult is a lightweight Result monad for C# with full LINQ query syntax for
+        sync, async, and mixed flows. Zero dependencies. .NET 8, 9, and 10.
+    </p>
+
+    <div class="install-command">
+        <code>dotnet add package QuickResult</code>
+    </div>
+
+    <div class="hero-actions">
+        <a class="button button-primary" href="getting-started">Get started</a>
+        <a class="button" href="examples">Try it in your browser</a>
+    </div>
+</div>
+
+<section class="home-section">
+    <h2>One query. Sync and async. No ceremony.</h2>
+    <p>
+        Most Result libraries make you choose between synchronous and asynchronous composition.
+        QuickResult lets you mix both in a single LINQ query and <code>await</code> it once at the end —
+        the first failure short-circuits everything after it.
+    </p>
+    <CodeBlock Code="@HeroSnippet" />
+    <p class="home-section-footer">
+        This isn't a mockup — every example on the <a href="examples">Examples page</a> runs the real
+        QuickResult package, compiled to WebAssembly, right in your browser.
+    </p>
+</section>
+
+<section class="home-section feature-grid-section">
+    <h2>Why QuickResult</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <h3>Full LINQ query syntax</h3>
+            <p>
+                <code>from</code>/<code>select</code> over Results — including queries that mix
+                synchronous and asynchronous steps seamlessly.
+            </p>
+        </div>
+        <div class="feature-card">
+            <h3>Zero dependencies</h3>
+            <p>One small assembly. Nothing else comes along for the ride — audit it in an afternoon.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Errors are values</h3>
+            <p>
+                Implement <code>IError</code> to carry structured domain errors and recover them with
+                ordinary C# pattern matching.
+            </p>
+        </div>
+        <div class="feature-card">
+            <h3>Exception &amp; null boundaries</h3>
+            <p>
+                <code>Try</code>, <code>TryAsync</code>, <code>FromNullable</code>, and <code>WhenNull</code>
+                convert throwing and nullable APIs into honest Results at the edge.
+            </p>
+        </div>
+        <div class="feature-card">
+            <h3>Guards built in</h3>
+            <p>
+                <code>FailIfTrue</code> / <code>FailIfFalse</code> keep validation rules inside the same
+                composable flow as everything else.
+            </p>
+        </div>
+        <div class="feature-card">
+            <h3>MIT licensed</h3>
+            <p>Free for commercial use. Source on GitHub, symbols published, docs included.</p>
+        </div>
+    </div>
+</section>
+
+<section class="home-section">
+    <h2>Try it right now</h2>
+    <p>This example is live — edit the inputs and run it against the real package:</p>
+    @if (_teaser is not null)
+    {
+        <ExampleRunner Example="_teaser" />
+    }
+    <p class="home-section-footer">
+        <a href="examples">See all @Registry.All.Count interactive examples →</a>
+    </p>
+</section>
+
+@code {
+    private IExample? _teaser;
+
+    protected override void OnInitialized()
+    {
+        _teaser = Registry.Find("linq-mixed-async").Match(e => (IExample?)e, _ => (IExample?)null);
+    }
+
+    private const string HeroSnippet =
+        """
+        var order =
+            from customer in FindCustomer(id)              // Result<Customer>
+            from credit in CheckCreditAsync(customer)      // Task<Result<Credit>>
+            from total in PriceCart(cart)                  // Result<decimal>
+            from ok in Result.Success(credit.Limit >= total)
+                             .FailIfFalse("Insufficient credit")
+            select PlaceOrder(customer, cart, total);
+
+        var receipt = await order.MatchAsync(
+            onSuccess: r => $"Order {r.Id} confirmed",
+            onFailure: e => $"Order declined: {e.Message}");
+        """;
+}

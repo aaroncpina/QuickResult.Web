@@ -1,0 +1,119 @@
+@page "/getting-started"
+
+<PageTitle>Getting Started — QuickResult</PageTitle>
+
+<article class="doc-page">
+    <h1>Getting Started</h1>
+    <p class="lead">
+        From install to your first composed Result flow in about five minutes.
+        Requires .NET 8 or later and C# 12 or later.
+    </p>
+
+    <h2>1. Install</h2>
+    <CodeBlock Code="dotnet add package QuickResult" />
+    <p>
+        Or via the Package Manager console: <code>Install-Package QuickResult</code>.
+        The package has zero dependencies and targets .NET 8, 9, and 10.
+    </p>
+
+    <h2>2. Create your first Results</h2>
+    <p>
+        A <code>Result&lt;T&gt;</code> is either a <strong>success carrying a value</strong> or a
+        <strong>failure carrying an <code>IError</code></strong>. Instead of throwing, return the outcome:
+    </p>
+    <CodeBlock Code="@FirstResultSnippet" />
+
+    <h2>3. Consume Results with Match</h2>
+    <p>
+        <code>Match</code> forces you to handle both branches — there is no way to "forget" the error path:
+    </p>
+    <CodeBlock Code="@MatchSnippet" />
+
+    <h2>4. Compose with LINQ</h2>
+    <p>
+        Chain dependent operations with query syntax. Each <code>from</code> unwraps a success;
+        the first failure short-circuits the rest of the query:
+    </p>
+    <CodeBlock Code="@LinqSnippet" />
+
+    <h2>5. Mix in async</h2>
+    <p>
+        This is QuickResult's signature feature: async steps drop into the same query without any
+        adapter code. Await the whole query once at the end:
+    </p>
+    <CodeBlock Code="@AsyncSnippet" />
+
+    <h2>6. Wrap the untrusted edges</h2>
+    <p>
+        Real codebases meet exceptions and nulls at their boundaries — parsers, HTTP clients, ORMs.
+        Convert them into Results at the edge, then compose safely inside:
+    </p>
+    <CodeBlock Code="@EdgesSnippet" />
+
+    <div class="next-steps">
+        <h2>Where to next?</h2>
+        <ul>
+            <li><a href="examples">Interactive examples</a> — run every feature live in your browser.</li>
+            <li><a href="reference">API reference</a> — every public type and method, documented.</li>
+            <li><a href="philosophy">Philosophy</a> — why Results, and where the pattern came from.</li>
+        </ul>
+    </div>
+</article>
+
+@code {
+    private const string FirstResultSnippet =
+        """
+        using QuickResult;
+
+        Result<decimal> GetBalance(string accountId) =>
+            accounts.TryGetValue(accountId, out var account)
+                ? Result.Success(account.Balance)
+                : Result.Failure<decimal>($"Unknown account '{accountId}'");
+        """;
+
+    private const string MatchSnippet =
+        """
+        var message = GetBalance("ACC-42").Match(
+            onSuccess: balance => $"Balance: {balance:C}",
+            onFailure: error => $"Sorry: {error.Message}");
+        """;
+
+    private const string LinqSnippet =
+        """
+        var transfer =
+            from source in GetBalance(fromId)
+            from target in GetBalance(toId)
+            from ok in Result.Success(source >= amount)
+                             .FailIfFalse("Insufficient funds")
+            select ExecuteTransfer(fromId, toId, amount);
+        """;
+
+    private const string AsyncSnippet =
+        """
+        var report =
+            from user in FindUser(userId)                  // Result<User>      (sync)
+            from orders in FetchOrdersAsync(user)          // Task<Result<...>> (async)
+            from summary in Summarize(orders)              // Result<Summary>   (sync)
+            select Render(user, summary);
+
+        var result = await report;
+        """;
+
+    private const string EdgesSnippet =
+        """
+        // Exceptions become failures
+        var config = Result.Try(() => File.ReadAllText("app.json"));
+
+        // Async exceptions too
+        var payload = await Result.TryAsync(() => http.GetStringAsync(url));
+
+        // Nulls become named failures
+        var user = Result.FromNullable(await db.FindAsync(id), "User not found");
+
+        // Or build a full pipeline: defer, catch, and null-check in one chain
+        var value = await Result
+            .FromAsync(() => service.GetValueAsync(ct))
+            .Try()
+            .WhenNull("Service returned null");
+        """;
+}

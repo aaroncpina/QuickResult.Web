@@ -1,0 +1,3 @@
+# Cloudflare Pages SPA fallback: serve the Blazor app for every route,
+# letting the client-side router resolve the page (or show its 404).
+/* /index.html 200

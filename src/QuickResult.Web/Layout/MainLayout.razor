@@ -1,0 +1,38 @@
+@inherits LayoutComponentBase
+
+<div class="site">
+    <header class="site-header">
+        <nav class="site-nav">
+            <a class="brand" href="/">
+                <span class="brand-mark">R&lt;T&gt;</span>
+                <span class="brand-name">QuickResult</span>
+            </a>
+            <div class="nav-links">
+                <NavLink href="getting-started">Getting Started</NavLink>
+                <NavLink href="examples">Examples</NavLink>
+                <NavLink href="reference">Reference</NavLink>
+                <NavLink href="philosophy">Philosophy</NavLink>
+                <NavLink href="contact">Contact</NavLink>
+            </div>
+            <div class="nav-external">
+                <a href="https://www.nuget.org/packages/QuickResult/" target="_blank" rel="noopener">NuGet</a>
+                <a href="https://github.com/aaroncpina/QuickResult" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="site-main">
+        @Body
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <span>QuickResult — MIT licensed, zero dependencies.</span>
+            <span>
+                <a href="https://www.nuget.org/packages/QuickResult/" target="_blank" rel="noopener">NuGet</a> ·
+                <a href="https://github.com/aaroncpina/QuickResult" target="_blank" rel="noopener">GitHub</a> ·
+                <a href="contact">Support</a>
+            </span>
+        </div>
+    </footer>
+</div>

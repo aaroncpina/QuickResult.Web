@@ -1,0 +1,126 @@
+@page "/philosophy"
+
+<PageTitle>Philosophy &amp; History — QuickResult</PageTitle>
+
+<article class="doc-page">
+    <h1>Philosophy &amp; History of the Result Pattern</h1>
+    <p class="lead">
+        The Result pattern is older than most languages that use it. Understanding where it came from
+        makes it obvious why it belongs in modern C#.
+    </p>
+
+    <h2>The problem: two kinds of failure, one mechanism</h2>
+    <p>
+        Every program deals with two very different kinds of failure. <strong>Exceptional failures</strong> —
+        out of memory, corrupted state, broken invariants — are things the current operation cannot
+        meaningfully respond to. <strong>Expected failures</strong> — a user typed an invalid email, an
+        account wasn't found, a payment was declined — are ordinary, anticipated outcomes of the domain.
+    </p>
+    <p>
+        Exceptions are a good tool for the first kind and a poor one for the second. When expected
+        failures travel as exceptions, four things go wrong:
+    </p>
+    <ul>
+        <li><strong>The signature lies.</strong> <code>Customer GetCustomer(string id)</code> claims to
+            always return a customer. The failure mode is invisible until it detonates at runtime.</li>
+        <li><strong>Control flow becomes non-local.</strong> A throw is a hidden goto — the reader can't
+            see where handling happens without tracing every caller.</li>
+        <li><strong>Handling is optional.</strong> Nothing forces a caller to catch. Forgotten catches
+            are found in production.</li>
+        <li><strong>It's slow.</strong> Stack unwinding costs orders of magnitude more than returning a
+            value — a real tax when "failure" happens thousands of times per minute as normal business.</li>
+    </ul>
+    <p>
+        The Result pattern's answer: <em>make failure a value</em>. A function that can fail returns a
+        type that says so — <code>Result&lt;Customer&gt;</code> — and the type system makes handling it
+        as unavoidable as using the value itself. The signature becomes honest, the failure path becomes
+        visible, and the compiler becomes your reviewer.
+    </p>
+
+    <h2>A brief history</h2>
+    <dl class="history-list">
+        <dt>1960s–70s — error codes</dt>
+        <dd>
+            C returned integers and set <code>errno</code>. Failure-as-value, but untyped, easily
+            ignored, and disconnected from the value it accompanied. The right instinct without the
+            type system to enforce it.
+        </dd>
+        <dt>1980s–90s — sum types and <em>Either</em></dt>
+        <dd>
+            ML-family languages introduced algebraic data types: a value that is exactly one of several
+            tagged alternatives. Haskell's <code>Maybe</code> and <code>Either e a</code> made
+            "value or error" a first-class, pattern-matchable type — and its monadic composition
+            (<code>do</code> notation, 1990s) solved the ergonomics: chain computations and let the
+            first failure short-circuit. Every modern Result library is a descendant of this idea —
+            including the LINQ query you write with QuickResult, which is C#'s closest cousin to
+            <code>do</code> notation.
+        </dd>
+        <dt>2003 — checked exceptions cautionary tale</dt>
+        <dd>
+            Java tried to force failure-handling through the type system with checked exceptions. The
+            goal was right; the mechanism fought the language (no composition, no generics integration)
+            and taught the industry that failure contracts must <em>compose</em> to be usable.
+        </dd>
+        <dt>2010s — Rust makes Result mainstream</dt>
+        <dd>
+            Rust shipped without exceptions: <code>Result&lt;T, E&gt;</code> and the <code>?</code>
+            operator are <em>the</em> error mechanism. A systems language proved that failure-as-value
+            scales to entire ecosystems, and a generation of developers came to expect it.
+        </dd>
+        <dt>2013 — "Railway-Oriented Programming"</dt>
+        <dd>
+            Scott Wlaschin's F# talk gave the pattern its most durable metaphor: a function is a piece
+            of two-track railway. Success rides the top track; the first failure switches the train to
+            the bottom track, which bypasses every later step. F# later added a built-in
+            <code>Result</code> type (F# 4.1, 2017).
+        </dd>
+        <dt>2015–present — the C# ecosystem</dt>
+        <dd>
+            C# gained the ingredients — expression-bodied members, pattern matching, records, nullable
+            reference types — and a family of Result libraries grew: LanguageExt, CSharpFunctionalExtensions,
+            FluentResults, ErrorOr. Each picks a point on the spectrum between "full functional toolkit"
+            and "minimal result type".
+        </dd>
+    </dl>
+
+    <h2>Where QuickResult sits</h2>
+    <p>
+        QuickResult stakes out a deliberate position in that spectrum:
+    </p>
+    <ul>
+        <li>
+            <strong>LINQ-first.</strong> C# already ships a monadic composition syntax — query
+            expressions. Rather than inventing a fluent DSL, QuickResult teaches <code>Result</code>
+            to speak it, including the part other libraries stumble on: <em>mixing sync and async
+            steps in one query</em>.
+        </li>
+        <li>
+            <strong>Minimal, not maximal.</strong> One namespace, a dozen public types, zero
+            dependencies. It's a Result type, not a functional-programming worldview — you can adopt
+            it in one method of a legacy codebase this afternoon.
+        </li>
+        <li>
+            <strong>Pragmatic at the edges.</strong> Real .NET code meets exceptions and nulls
+            constantly, so <code>Try</code>, <code>TryAsync</code>, <code>FromNullable</code>, and
+            <code>WhenNull</code> are front-door APIs, not afterthoughts.
+        </li>
+        <li>
+            <strong>Exceptions still exist.</strong> QuickResult doesn't abolish exceptions — it
+            reserves them for what they're good at: the truly exceptional. Broken invariants should
+            still throw. Declined payments should not.
+        </li>
+    </ul>
+
+    <h2>The test</h2>
+    <p>
+        A simple heuristic for choosing between a Result and an exception: <em>would you write this
+        failure into the user story?</em> "When the account is not found, show a message" — that's
+        domain behavior, and it deserves a place in the type signature. "When the heap is exhausted…" —
+        nobody writes that story. Let it throw.
+    </p>
+
+    <p class="home-section-footer">
+        Convinced? <a href="getting-started">Get started</a>, or
+        <a href="examples">try the pattern live</a> first.
+    </p>
+</article>

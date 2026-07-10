@@ -1,0 +1,24 @@
+@page "/not-found"
+
+<PageTitle>404 — QuickResult</PageTitle>
+
+<article class="doc-page notfound-page">
+    <h1>Failure(Page not found)</h1>
+    <p class="lead">
+        This route returned a failure — but like any good Result, it's explicit about it and easy to
+        recover from.
+    </p>
+    <CodeBlock Code="@Snippet" />
+    <p>
+        <a class="button button-primary" href="/">Recover to home</a>
+    </p>
+</article>
+
+@code {
+    private const string Snippet =
+        """
+        var page = Result.Failure<Page>("404: no route matches this URL");
+
+        var next = page | Result.Success(Page.Home);   // Success(Home)
+        """;
+}

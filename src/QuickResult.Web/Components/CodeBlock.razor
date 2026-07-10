@@ -1,0 +1,28 @@
+@inject ISyntaxHighlighter Highlighter
+
+<pre class="code-block"><code>@foreach (var token in Highlighter.Tokenize(Code))
+{
+    if (token.Kind == TokenKind.Plain)
+    {
+        @token.Text
+    }
+    else
+    {
+        <span class="@CssClass(token.Kind)">@token.Text</span>
+    }
+}</code></pre>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Code { get; set; } = string.Empty;
+
+    private static string CssClass(TokenKind kind) => kind switch
+    {
+        TokenKind.Keyword => "tok-keyword",
+        TokenKind.TypeName => "tok-typename",
+        TokenKind.String => "tok-string",
+        TokenKind.Number => "tok-number",
+        TokenKind.Comment => "tok-comment",
+        _ => "tok-plain",
+    };
+}

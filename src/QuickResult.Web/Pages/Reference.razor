@@ -1,0 +1,239 @@
+@page "/reference"
+
+<PageTitle>API Reference — QuickResult</PageTitle>
+
+<article class="doc-page reference-page">
+    <h1>API Reference</h1>
+    <p class="lead">
+        The complete public surface of QuickResult 2.0.0 — one namespace, <code>QuickResult</code>,
+        zero dependencies, targeting .NET 8, 9, and 10. Descriptions are drawn from the package's
+        own XML documentation.
+    </p>
+
+    <nav class="reference-toc">
+        <a href="reference#result-t">Result&lt;T&gt;</a>
+        <a href="reference#result-static">Result (factories)</a>
+        <a href="reference#errors">IError &amp; Error</a>
+        <a href="reference#unit">Unit</a>
+        <a href="reference#linq">LINQ extensions</a>
+        <a href="reference#match">Match extensions</a>
+        <a href="reference#guards">Guards</a>
+        <a href="reference#pipelines">Pipelines</a>
+        <a href="reference#implementation">Technical implementation</a>
+    </nav>
+
+    <section id="result-t">
+        <h2><code>Result&lt;T&gt;</code></h2>
+        <p>
+            Represents the outcome of an operation that can either succeed with a value of type
+            <code>T</code> or fail with an <code>IError</code>.
+        </p>
+        <table class="api-table">
+            <thead><tr><th>Member</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>IsSuccess</code></td><td>Whether the result represents success.</td></tr>
+                <tr><td><code>IsFailure</code></td><td>Whether the result represents failure.</td></tr>
+                <tr><td><code>Value</code></td><td>The success value. Throws <code>InvalidOperationException</code> if accessed on a failure — check <code>IsSuccess</code> or prefer <code>Match</code>/<code>ValueOr</code>.</td></tr>
+                <tr><td><code>Error</code></td><td>The failure error. Throws <code>InvalidOperationException</code> if accessed on a success.</td></tr>
+                <tr><td><code>Success(T value)</code></td><td>Creates a successful result containing <code>value</code>.</td></tr>
+                <tr><td><code>Failure(IError error)</code><br /><code>Failure(string error)</code></td><td>Creates a failed result. The error message must be non-empty.</td></tr>
+                <tr><td><code>Map&lt;TOut&gt;(Func&lt;T, TOut&gt;)</code></td><td>Transforms the success value; failures pass through unchanged.</td></tr>
+                <tr><td><code>Bind&lt;TOut&gt;(Func&lt;T, Result&lt;TOut&gt;&gt;)</code></td><td>Chains a result-producing operation onto a success; failures pass through.</td></tr>
+                <tr><td><code>MapFailure(Func&lt;IError, IError&gt;)</code></td><td>Transforms the error while preserving successes — ideal for adding context as failures bubble up.</td></tr>
+                <tr><td><code>ValueOr(T fallback)</code><br /><code>ValueOr(Func&lt;IError, T&gt;)</code></td><td>Unwraps the value, or produces a fallback (optionally from the error).</td></tr>
+                <tr><td><code>left | right</code></td><td>Or-operator: returns <code>left</code> when successful, otherwise <code>right</code>. A fallback strategy at the Result level.</td></tr>
+                <tr><td><code>ToString()</code></td><td><code>Success(value)</code> or <code>Failure(error)</code>.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="result-static">
+        <h2><code>Result</code> — factory methods</h2>
+        <p>Convenience factories that let type inference do the work at the call site.</p>
+        <table class="api-table">
+            <thead><tr><th>Method</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>Success&lt;T&gt;(T value)</code></td><td>Successful <code>Result&lt;T&gt;</code>; <code>T</code> is inferred.</td></tr>
+                <tr><td><code>Success()</code></td><td>Successful <code>Result&lt;Unit&gt;</code> for operations with no payload.</td></tr>
+                <tr><td><code>Failure&lt;T&gt;(IError | string)</code></td><td>Failed <code>Result&lt;T&gt;</code>.</td></tr>
+                <tr><td><code>FromNullable&lt;T&gt;(T? value, string error)</code></td><td>Success when the value is non-null; otherwise a failure with <code>error</code>. Overloads cover both reference and value types.</td></tr>
+                <tr><td><code>Try&lt;T&gt;(Func&lt;T&gt;)</code><br /><code>Try(Action)</code></td><td>Runs the delegate; a thrown exception becomes a failure carrying the exception message.</td></tr>
+                <tr><td><code>TryAsync&lt;T&gt;(Func&lt;Task&lt;T&gt;&gt;)</code><br /><code>TryAsync(Func&lt;Task&gt;)</code></td><td>Async version of <code>Try</code>.</td></tr>
+                <tr><td><code>From&lt;T&gt;(Func&lt;T&gt;)</code></td><td>Creates a deferred <code>ResultPipeline&lt;T&gt;</code> source from a synchronous function.</td></tr>
+                <tr><td><code>FromAsync&lt;T&gt;(Func&lt;Task&lt;T&gt;&gt;)</code></td><td>Creates a deferred pipeline source from an async function. An overload accepts <code>ConfiguredTaskAwaitable&lt;T&gt;</code> for <code>ConfigureAwait(false)</code> callers.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="errors">
+        <h2><code>IError</code> &amp; <code>Error</code></h2>
+        <p>
+            <code>IError</code> is the contract every failure carries — a single
+            <code>string Message</code> property. Implement it to create structured, domain-specific
+            error types (HTTP errors, validation errors) and recover them with ordinary C# pattern
+            matching (<code>is</code>, <code>as</code>, <code>switch</code>).
+        </p>
+        <CodeBlock Code="@CustomErrorSnippet" />
+        <p>
+            <code>Error</code> is the built-in default implementation wrapping a string message, with
+            implicit conversions to and from <code>string</code> — which is why plain strings work
+            anywhere an <code>IError</code> is expected. Empty or whitespace messages are rejected
+            with <code>ArgumentException</code>.
+        </p>
+    </section>
+
+    <section id="unit">
+        <h2><code>Unit</code></h2>
+        <p>
+            A void-like value for operations that succeed without producing data —
+            <code>Result&lt;Unit&gt;</code> is QuickResult's answer to "a Result with no payload."
+            Its single value is <code>Unit.Value</code>; <code>Result.Success()</code> and
+            <code>Result.Try(Action)</code> produce it for you.
+        </p>
+    </section>
+
+    <section id="linq">
+        <h2>LINQ extensions</h2>
+        <p>
+            <code>ResultLinqExtensions</code> provides <code>Select</code> and <code>SelectMany</code>
+            over <code>Result&lt;T&gt;</code>, which is what makes <code>from</code>/<code>select</code>
+            query syntax work. <code>ResultAsyncLinqExtensions</code> adds the overloads over
+            <code>Task&lt;Result&lt;T&gt;&gt;</code> — covering async→sync, sync→async, and async→async
+            binds — so one query can mix both worlds:
+        </p>
+        <CodeBlock Code="@MixedQuerySnippet" />
+        <table class="api-table">
+            <thead><tr><th>Method</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>Select</code></td><td>Projects a success value (backs <code>select</code>). Sync and async source overloads.</td></tr>
+                <tr><td><code>SelectMany</code></td><td>Binds then projects (backs multiple <code>from</code> clauses). Four overloads cover every sync/async combination of source and binder.</td></tr>
+                <tr><td><code>Transpose&lt;T&gt;()</code></td><td>Turns <code>Result&lt;Task&lt;T&gt;&gt;</code> inside-out into <code>Task&lt;Result&lt;T&gt;&gt;</code>, capturing exceptions from the inner task as failures.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="match">
+        <h2>Match extensions</h2>
+        <p>
+            <code>Match</code> projects a Result into a single value by invoking exactly one of two
+            delegates. <code>MatchAsync</code> provides seven additional overloads spanning every
+            combination of sync/async source, success handler, and failure handler — so you never
+            write adapter lambdas:
+        </p>
+        <table class="api-table">
+            <thead><tr><th>Method</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>Match(onSuccess, onFailure)</code></td><td>Synchronous branch — both delegates return <code>TResult</code>.</td></tr>
+                <tr><td><code>MatchAsync(...)</code></td><td>Overloads for <code>Result&lt;T&gt;</code> and <code>Task&lt;Result&lt;T&gt;&gt;</code> sources with any mix of sync and async handlers; all return <code>Task&lt;TResult&gt;</code>.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="guards">
+        <h2>Guards — <code>ResultGuardExtensions</code></h2>
+        <p>
+            Boolean guards turn checks into failures without leaving the flow. They are intentionally
+            restricted to <code>Result&lt;bool&gt;</code> to keep the API explicit.
+        </p>
+        <table class="api-table">
+            <thead><tr><th>Method</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>FailIfTrue(string error)</code></td><td>Fails with <code>error</code> when the successful boolean is <code>true</code>. Existing failures propagate unchanged. Sync and <code>Task</code>-wrapped overloads.</td></tr>
+                <tr><td><code>FailIfFalse(string error)</code></td><td>Fails when the successful boolean is <code>false</code>. Same propagation rules.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="pipelines">
+        <h2>Pipelines — <code>ResultPipeline&lt;T&gt;</code></h2>
+        <p>
+            A <code>ResultPipeline&lt;T&gt;</code> is a <em>deferred</em> source: nothing executes until
+            the pipeline is materialized. This lets you declare how the value is fetched, how exceptions
+            are handled, and how nulls are treated — as one readable chain:
+        </p>
+        <CodeBlock Code="@PipelineSnippet" />
+        <table class="api-table">
+            <thead><tr><th>Method</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>Result.From / Result.FromAsync</code></td><td>Create the deferred source.</td></tr>
+                <tr><td><code>.Try()</code></td><td>Executes the pipeline; any thrown exception becomes a failure.</td></tr>
+                <tr><td><code>.WhenNull(string error)</code></td><td>Converts a successful-but-null value into a named failure and narrows the type from <code>T?</code> to <code>T</code>. Reference and nullable-value-type overloads.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="implementation">
+        <h2>Technical implementation</h2>
+        <p>
+            Two design decisions do most of the work in QuickResult:
+        </p>
+        <h3>Query syntax is just method resolution</h3>
+        <p>
+            The C# compiler lowers <code>from a in x from b in f(a) select g(a, b)</code> into calls to
+            <code>SelectMany(x, f, g)</code> — it doesn't care what <code>x</code> is, only that a
+            suitable <code>SelectMany</code> exists. QuickResult supplies those methods for
+            <code>Result&lt;T&gt;</code> <em>and</em> <code>Task&lt;Result&lt;T&gt;&gt;</code>, in every
+            source/binder combination. The moment any step in a query is async, overload resolution
+            selects a <code>Task</code>-returning <code>SelectMany</code>, the rest of the query chains
+            on <code>Task&lt;Result&lt;T&gt;&gt;</code>, and you await once at the end. Mixed sync/async
+            composition falls out of the type system — no schedulers, no state machines of its own,
+            no blocking.
+        </p>
+        <h3>Failures short-circuit by construction</h3>
+        <p>
+            Every combinator (<code>Map</code>, <code>Bind</code>, <code>SelectMany</code>, guards,
+            <code>WhenNull</code>) checks <code>IsFailure</code> first and propagates the existing error
+            without invoking your delegate. There is no hidden control flow: a failure simply flows
+            through every remaining step untouched, which is why a ten-step query with a failure at
+            step two costs eight cheap pass-throughs, not eight try/catch frames.
+        </p>
+        <h3>Package facts</h3>
+        <ul>
+            <li>Single assembly, <strong>zero</strong> runtime dependencies.</li>
+            <li>Targets <code>net8.0</code>, <code>net9.0</code>, and <code>net10.0</code>; requires C# 12+.</li>
+            <li>Nullable reference types are honored throughout — <code>WhenNull</code> and <code>FromNullable</code> genuinely narrow <code>T?</code> to <code>T</code>.</li>
+            <li>Invalid states are unrepresentable at the edges: empty error messages and null errors are rejected with argument exceptions at construction time.</li>
+            <li>MIT licensed; symbols (<code>.snupkg</code>) published for debugging.</li>
+        </ul>
+        <p class="home-section-footer">
+            Want the source? It's on <a href="https://github.com/aaroncpina/QuickResult" target="_blank" rel="noopener">GitHub</a>.
+        </p>
+    </section>
+</article>
+
+@code {
+    private const string CustomErrorSnippet =
+        """
+        public sealed record ValidationError(string Field, string Message) : IError;
+
+        var result = Result.Failure<Order>(
+            new ValidationError("Email", "Email address is required"));
+
+        var response = result.Match(
+            onSuccess: order => Ok(order),
+            onFailure: e => e switch
+            {
+                ValidationError v => UnprocessableEntity($"{v.Field}: {v.Message}"),
+                _ => Problem(e.Message),
+            });
+        """;
+
+    private const string MixedQuerySnippet =
+        """
+        var query =
+            from a in Result.Success(4)     // Result<int>              (sync)
+            from b in GetAsync(6)           // Task<Result<int>>        (async)
+            from c in Result.Success(2)     // back to sync — no adapters
+            select a + b + c;
+
+        var result = await query;           // Success(12)
+        """;
+
+    private const string PipelineSnippet =
+        """
+        var value = await Result
+            .FromAsync(() => service.GetValueAsync(ct))  // deferred — nothing runs yet
+            .Try()                                       // run; exceptions → failures
+            .WhenNull("Value was null");                 // null → failure, T? → T
+        """;
+}
