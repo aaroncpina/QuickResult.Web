@@ -5,8 +5,8 @@
 <article class="doc-page reference-page">
     <h1>API Reference</h1>
     <p class="lead">
-        The complete public surface of QuickResult 2.0.0 — one namespace, <code>QuickResult</code>,
-        zero dependencies, targeting .NET 8, 9, and 10. Descriptions are drawn from the package's
+        The complete public surface of QuickResult 2.3.0 — one namespace, <code>QuickResult</code>,
+        zero dependencies, targeting .NET 8 and .NET Standard 2.0. Descriptions are drawn from the package's
         own XML documentation.
     </p>
 
@@ -190,7 +190,7 @@
         <h3>Package facts</h3>
         <ul>
             <li>Single assembly, <strong>zero</strong> runtime dependencies.</li>
-            <li>Targets <code>net8.0</code>, <code>net9.0</code>, and <code>net10.0</code>; requires C# 12+.</li>
+            <li>Targets <code>net8.0</code> and <code>netstandard2.0</code>, so it runs on .NET 8+ and .NET Framework 4.7.2+.</li>
             <li>Nullable reference types are honored throughout — <code>WhenNull</code> and <code>FromNullable</code> genuinely narrow <code>T?</code> to <code>T</code>.</li>
             <li>Invalid states are unrepresentable at the edges: empty error messages and null errors are rejected with argument exceptions at construction time.</li>
             <li>MIT licensed; symbols (<code>.snupkg</code>) published for debugging.</li>
