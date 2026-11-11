@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\QuickResult.Web\QuickResult.Web.csproj" />
+    <ProjectReference Include="..\..\src\QuickResult.Web.Prerender\QuickResult.Web.Prerender.csproj" />
   </ItemGroup>
 
 </Project>

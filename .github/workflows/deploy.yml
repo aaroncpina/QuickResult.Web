@@ -47,6 +47,11 @@ jobs:
       - name: Publish Blazor WebAssembly site
         run: dotnet publish src/QuickResult.Web -c Release -o publish
 
+      # Render every page to static HTML (plus 404.html and sitemap.xml) so search
+      # engines and link previews see real content without running WebAssembly.
+      - name: Prerender pages
+        run: dotnet run --project src/QuickResult.Web.Prerender -c Release -- publish/wwwroot
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

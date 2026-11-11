@@ -1,6 +1,9 @@
 @page "/not-found"
+@* The router renders this page for unknown URLs without applying its default layout. *@
+@layout MainLayout
 
-<PageTitle>404 — QuickResult</PageTitle>
+<PageMeta Title="404 — QuickResult"
+          Description="This page does not exist on quickresult.net. Head back to the QuickResult home page for the Result monad for C# with LINQ query syntax." NoIndex="true" />
 
 <article class="doc-page notfound-page">
     <h1>Failure(Page not found)</h1>

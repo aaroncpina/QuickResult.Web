@@ -1,0 +1,41 @@
+@inject NavigationManager Navigation
+
+@* The head tags every page needs: a unique title and description for search results,
+   a canonical address, and the Open Graph / Twitter tags link previews read. *@
+<PageTitle>@Title</PageTitle>
+<HeadContent>
+    <meta name="description" content="@Description" />
+    @if (NoIndex)
+    {
+        <meta name="robots" content="noindex" />
+    }
+    else
+    {
+        <link rel="canonical" href="@CanonicalUrl" />
+        <meta property="og:url" content="@CanonicalUrl" />
+    }
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="QuickResult" />
+    <meta property="og:title" content="@Title" />
+    <meta property="og:description" content="@Description" />
+    <meta property="og:image" content="@PreviewImageUrl" />
+    <meta name="twitter:card" content="summary" />
+</HeadContent>
+
+@code {
+    private static readonly string PreviewImageUrl = new Uri(SiteInfo.Origin, "icon-192.png").AbsoluteUri;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>Set on pages that have no address of their own, such as the not-found page.</summary>
+    [Parameter]
+    public bool NoIndex { get; set; }
+
+    // Always the public address without query or fragment, whichever host is serving the page.
+    private string CanonicalUrl =>
+        new Uri(SiteInfo.Origin, new Uri(Navigation.Uri).AbsolutePath).AbsoluteUri;
+}

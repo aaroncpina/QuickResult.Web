@@ -18,6 +18,8 @@ src/QuickResult.Web/          Blazor WASM site
   Components/                 CodeBlock, ExampleRunner
   Pages/                      Home, Getting Started, Examples, Reference,
                               Philosophy, Contact, 404
+src/QuickResult.Web.Prerender/ Build-time tool: renders each page to static HTML,
+                              plus 404.html and sitemap.xml
 tests/QuickResult.Web.Tests/  xUnit + bUnit suite (TDD; tests are immutable)
 .github/workflows/deploy.yml  Test + deploy to Cloudflare Pages
 DEPLOYMENT.md                 Manual go-live checksheet
@@ -29,7 +31,24 @@ DEPLOYMENT.md                 Manual go-live checksheet
 dotnet test                                 # run the full suite
 dotnet run --project src/QuickResult.Web    # local dev server
 dotnet publish src/QuickResult.Web -c Release -o publish   # static output in publish/wwwroot
+dotnet run --project src/QuickResult.Web.Prerender -c Release -- publish/wwwroot   # prerender it
 ```
+
+## Prerendering
+
+The site is a WebAssembly app, but crawlers and link previews mostly don't run
+WebAssembly. After publishing, the prerender tool runs the real app router for
+every `@page` route and writes the result into the published output:
+
+- `index.html`, `reference.html`, … — each page's full markup and its own
+  `<title>`, description, canonical URL and Open Graph tags (from the
+  `PageMeta` component at the top of each page);
+- `404.html` — so unknown URLs return a real 404 instead of the app shell;
+- `sitemap.xml` — every page's public address.
+
+The app still boots in the browser and takes over, so the examples stay
+interactive. New pages are picked up automatically: add a `.razor` page with a
+`PageMeta` and it is prerendered and listed in the sitemap.
 
 ## Adding an example
 
