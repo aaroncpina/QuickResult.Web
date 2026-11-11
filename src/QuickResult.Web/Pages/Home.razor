@@ -7,7 +7,7 @@
     <h1>Handle failure like it's <em>data</em>.<br />Because it is.</h1>
     <p class="hero-tagline">
         QuickResult is a lightweight Result monad for C# with full LINQ query syntax for
-        sync, async, and mixed flows. Zero dependencies. .NET 8+ and .NET Standard 2.0.
+        sync, async, and mixed flows. Zero dependencies. .NET 10+ and .NET Standard 2.0.
     </p>
 
     <div class="install-command">
@@ -45,14 +45,25 @@
             </p>
         </div>
         <div class="feature-card">
-            <h3>Zero dependencies</h3>
-            <p>One small assembly. Nothing else comes along for the ride — audit it in an afternoon.</p>
+            <h3>Zero dependencies, MIT licensed</h3>
+            <p>
+                One small assembly, nothing else along for the ride — audit it in an afternoon.
+                Free for commercial use, with source on GitHub and symbols published.
+            </p>
         </div>
         <div class="feature-card">
             <h3>Errors are values</h3>
             <p>
                 Implement <code>IError</code> to carry structured domain errors and recover them with
                 ordinary C# pattern matching.
+            </p>
+        </div>
+        <div class="feature-card">
+            <h3>A real C# union</h3>
+            <p>
+                On .NET 10+, <code>Result&lt;T&gt;</code> is a C# union of <code>T</code> and
+                <code>IError</code>: <code>switch</code> on it by type with C# 15 and the compiler
+                checks you handled both cases.
             </p>
         </div>
         <div class="feature-card">
@@ -68,10 +79,6 @@
                 <code>FailIfTrue</code> / <code>FailIfFalse</code> keep validation rules inside the same
                 composable flow as everything else.
             </p>
-        </div>
-        <div class="feature-card">
-            <h3>MIT licensed</h3>
-            <p>Free for commercial use. Source on GitHub, symbols published, docs included.</p>
         </div>
     </div>
 </section>

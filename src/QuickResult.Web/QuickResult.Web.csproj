@@ -8,12 +8,14 @@
     <!-- Keep real exception messages in trimmed WASM builds; without this,
          published output shows resource keys like Format_InvalidStringWithValue -->
     <UseSystemResourceKeys>false</UseSystemResourceKeys>
+    <!-- C# 15 (needs the .NET 11 SDK) so the examples can match Result<T> as a C# union -->
+    <LangVersion>15</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" PrivateAssets="all" />
-    <PackageReference Include="QuickResult" Version="2.3.0" />
+    <PackageReference Include="QuickResult" Version="2.5.0" />
   </ItemGroup>
 
 </Project>

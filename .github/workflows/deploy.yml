@@ -16,7 +16,11 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          # .NET 10 is the runtime the site and tests target; the .NET 11 SDK
+          # supplies C# 15, which the union example needs.
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Run unit tests
         run: dotnet test --configuration Release
@@ -34,7 +38,11 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          # .NET 10 is the runtime the site and tests target; the .NET 11 SDK
+          # supplies C# 15, which the union example needs.
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Publish Blazor WebAssembly site
         run: dotnet publish src/QuickResult.Web -c Release -o publish

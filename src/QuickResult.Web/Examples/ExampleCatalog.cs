@@ -22,5 +22,6 @@ public static class ExampleCatalog
         new AsyncPipelineExample(),
         new CustomErrorsExample(),
         new MapFailureExample(),
+        new UnionSwitchExample(),
     ];
 }

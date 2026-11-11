@@ -5,13 +5,14 @@
 <article class="doc-page reference-page">
     <h1>API Reference</h1>
     <p class="lead">
-        The complete public surface of QuickResult 2.3.0 — one namespace, <code>QuickResult</code>,
-        zero dependencies, targeting .NET 8 and .NET Standard 2.0. Descriptions are drawn from the package's
+        The complete public surface of QuickResult 2.5.0 — one namespace, <code>QuickResult</code>,
+        zero dependencies, targeting .NET 10 and .NET Standard 2.0. Descriptions are drawn from the package's
         own XML documentation.
     </p>
 
     <nav class="reference-toc">
         <a href="reference#result-t">Result&lt;T&gt;</a>
+        <a href="reference#union">C# union support</a>
         <a href="reference#result-static">Result (factories)</a>
         <a href="reference#errors">IError &amp; Error</a>
         <a href="reference#unit">Unit</a>
@@ -45,6 +46,34 @@
                 <tr><td><code>ToString()</code></td><td><code>Success(value)</code> or <code>Failure(error)</code>.</td></tr>
             </tbody>
         </table>
+    </section>
+
+    <section id="union">
+        <h2>C# union support</h2>
+        <p>
+            On .NET 10 and later, <code>Result&lt;T&gt;</code> is a C# union of <code>T</code> and
+            <code>IError</code>. With C# 15 (the .NET 11 SDK) you can match a result by type, and the
+            compiler checks that both cases are handled:
+        </p>
+        <CodeBlock Code="@UnionSwitchSnippet" />
+        <p>Custom error types can have their own arms:</p>
+        <CodeBlock Code="@UnionCustomErrorSnippet" />
+        <p>
+            A value or an error converts implicitly to a result, so methods can return either directly:
+        </p>
+        <CodeBlock Code="@UnionConversionSnippet" />
+        <h3>Notes</h3>
+        <ul>
+            <li>Matching a value-type result (such as <code>Result&lt;int&gt;</code>) does not box.</li>
+            <li>Projects targeting .NET 10 need <code>&lt;LangVersion&gt;15&lt;/LangVersion&gt;</code> (or <code>latest</code>) and the .NET 11 SDK. Projects targeting .NET 11 need nothing extra.</li>
+            <li>Union support is in the .NET 10+ build only. Projects that resolve the .NET Standard 2.0 build (.NET Framework, .NET 8, .NET 9) keep the rest of the API unchanged.</li>
+            <li>A successful result holding <code>null</code> matches neither arm; add a <code>null</code> arm when <code>T</code> is nullable. For the same reason <code>result is null</code> is true for such a result, so use <code>IsSuccess</code> to tell the two apart.</li>
+            <li>A type pattern cannot tell success from failure when <code>T</code> overlaps <code>IError</code> (<code>T</code> is <code>IError</code>, <code>object</code>, or an error type): <code>IError e</code> also matches a successful value that is an error, and a <code>T</code> arm also matches a failure whose error is a <code>T</code>. Use <code>IsSuccess</code> or <code>Match</code> for those.</li>
+            <li>Implicit conversion follows the same overlap: an error assigned to a <code>Result&lt;object&gt;</code> becomes a failure, and assigning one to a <code>Result&lt;IError&gt;</code> does not compile. <code>Success(...)</code> and <code>Failure(...)</code> are always unambiguous.</li>
+            <li><code>IsSuccess</code>, <code>Value</code>, <code>Error</code>, <code>Match</code> and property patterns such as <code>result is { IsSuccess: true }</code> work as before.</li>
+            <li>Under C# 15, patterns on a result test what it holds, so <code>result is Result&lt;int&gt;</code> no longer compiles when <code>result</code> is already typed <code>Result&lt;int&gt;</code>. Matching from <code>object</code> (<code>obj is Result&lt;int&gt; r</code>) is unaffected.</li>
+            <li><code>Result&lt;T&gt;.IUnionMembers</code> is compiler infrastructure that describes the union to the compiler; it is not intended to be used directly.</li>
+        </ul>
     </section>
 
     <section id="result-static">
@@ -190,7 +219,7 @@
         <h3>Package facts</h3>
         <ul>
             <li>Single assembly, <strong>zero</strong> runtime dependencies.</li>
-            <li>Targets <code>net8.0</code> and <code>netstandard2.0</code>, so it runs on .NET 8+ and .NET Framework 4.7.2+.</li>
+            <li>Targets <code>net10.0</code> and <code>netstandard2.0</code>, so it runs on .NET 10+ and, through .NET Standard 2.0, on .NET Framework 4.7.2+ and older .NET versions.</li>
             <li>Nullable reference types are honored throughout — <code>WhenNull</code> and <code>FromNullable</code> genuinely narrow <code>T?</code> to <code>T</code>.</li>
             <li>Invalid states are unrepresentable at the edges: empty error messages and null errors are rejected with argument exceptions at construction time.</li>
             <li>MIT licensed; symbols (<code>.snupkg</code>) published for debugging.</li>
@@ -216,6 +245,41 @@
                 ValidationError v => UnprocessableEntity($"{v.Field}: {v.Message}"),
                 _ => Problem(e.Message),
             });
+        """;
+
+    private const string UnionSwitchSnippet =
+        """
+        Result<int> result = ParsePositive(input);
+
+        string text = result switch
+        {
+            int value => $"Got {value}",
+            IError error => $"Failed: {error.Message}"
+        };
+
+        if (result is IError failure)
+            Console.WriteLine(failure.Message);
+        """;
+
+    private const string UnionCustomErrorSnippet =
+        """
+        string status = result switch
+        {
+            int value => "200",
+            NotFoundError => "404",
+            IError => "500"
+        };
+        """;
+
+    private const string UnionConversionSnippet =
+        """
+        Result<int> ParsePositive(string text)
+        {
+            if (int.TryParse(text, out var number) && number > 0)
+                return number;
+
+            return new Error("Not a positive integer");
+        }
         """;
 
     private const string MixedQuerySnippet =
