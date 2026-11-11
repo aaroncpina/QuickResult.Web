@@ -58,3 +58,23 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy publish/wwwroot --project-name=quickresult
+
+      # IndexNow: tell Bing and the other participating search engines which pages
+      # exist as soon as a deploy lands. The key is public by design; it is proved
+      # by the matching 06c5b7a97c8bed9610e8d7a306634d4c.txt file served from the site root.
+      - name: Notify search engines (IndexNow)
+        continue-on-error: true
+        env:
+          INDEXNOW_KEY: 06c5b7a97c8bed9610e8d7a306634d4c
+        run: |
+          grep -o '<loc>[^<]*</loc>' publish/wwwroot/sitemap.xml \
+            | sed -e 's/<loc>//' -e 's/<\/loc>//' \
+            | jq -R . \
+            | jq -s --arg key "$INDEXNOW_KEY" \
+                '{host: "quickresult.net", key: $key, keyLocation: "https://quickresult.net/\($key).txt", urlList: .}' \
+            > indexnow.json
+          cat indexnow.json
+          curl -sS -o /dev/null -w "IndexNow responded %{http_code}\n" \
+            -X POST https://api.indexnow.org/indexnow \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data @indexnow.json

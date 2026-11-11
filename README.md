@@ -61,5 +61,6 @@ pick it up automatically.
 ## Deployment
 
 Pushes to `main` run the tests and deploy to Cloudflare Pages via GitHub
-Actions. See [DEPLOYMENT.md](DEPLOYMENT.md) for the one-time setup
+Actions. After each deploy the workflow pings IndexNow with the sitemap's
+URLs so Bing and other participating search engines re-crawl promptly. See [DEPLOYMENT.md](DEPLOYMENT.md) for the one-time setup
 (domain, DNS, email routing for support@quickresult.net).
