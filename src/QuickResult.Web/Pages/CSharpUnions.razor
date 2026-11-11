@@ -1,0 +1,274 @@
+@page "/csharp-unions"
+@inject IExampleRegistry Registry
+
+<PageMeta Title="C# union types and the Result type — QuickResult"
+          Description="C# 15 union types explained: exhaustive switch, implicit conversions, and how QuickResult makes Result<T> a union of T and IError on .NET 10 and .NET 11, with a live example."
+          StructuredData="@StructuredData.UnionsArticle" />
+
+<article class="doc-page">
+    <h1>C# union types, and how Result&lt;T&gt; became one</h1>
+    <p class="lead">
+        Union types are one of the longest-standing requests in C#'s history. F# has had them from the
+        start; C# developers have spent years imitating them with base classes, visitor patterns and
+        <code>Match</code> methods. With C# 15 and .NET 11 they are finally part of the language — and
+        from version 2.5, QuickResult's <code>Result&lt;T&gt;</code> is one.
+    </p>
+
+    <h2>What a union type is</h2>
+    <p>
+        A union type holds a single value that is one of a fixed set of types. The types don't need a
+        common base class; the union is what groups them. Because the set is closed, the compiler knows
+        every possible case and can check that you handled all of them.
+    </p>
+    <p>C# 15 adds a one-line declaration for it:</p>
+    <CodeBlock Code="@DeclarationSnippet" />
+    <p>
+        You read a union by switching on its <em>contents</em>. Each arm names one of the case types,
+        and the switch is exhaustive: remove an arm and the compiler tells you which case is no longer
+        covered.
+    </p>
+    <CodeBlock Code="@ExhaustiveSwitchSnippet" />
+    <p>
+        That last point is the one that matters. When a case is added to the union later, every switch
+        that reads it is flagged until it handles the new case. With a class hierarchy and a
+        <code>default</code> arm, the same change compiles silently and fails at run time.
+    </p>
+
+    <h2>A Result is the textbook union</h2>
+    <p>
+        "This operation produced a value, or it produced an error" is exactly a union of two cases. It's
+        the example Microsoft's own union tutorial uses. Until now a C# result type had to simulate the
+        union: store both a value and an error, expose an <code>IsSuccess</code> flag, and trust callers
+        to check the flag before reading the right property — or offer a <code>Match</code> method that
+        takes one lambda per case.
+    </p>
+    <p>
+        <code>Match</code> does force both cases to be handled, which is why QuickResult has always had
+        it. But it is a library convention, not a language feature. You can't add an arm for a specific
+        error type, you can't use it in an <code>is</code> expression, and the compiler's pattern
+        matching knows nothing about it.
+    </p>
+
+    <h2>Result&lt;T&gt; is a union of T and IError</h2>
+    <p>
+        On .NET 10 and later, <code>Result&lt;T&gt;</code> is a C# union whose two cases are the success
+        value <code>T</code> and the failure <code>IError</code>. You can switch on a result directly:
+    </p>
+    <CodeBlock Code="@ResultSwitchSnippet" />
+    <p>
+        Because the failure case is an interface, your own error types get their own arms. The compiler
+        still requires the general <code>IError</code> arm, so an error type you didn't anticipate
+        can't slip through:
+    </p>
+    <CodeBlock Code="@CustomErrorSnippet" />
+    <p>This example runs the real package in your browser. Try 3, then 25, then something that isn't a number:</p>
+    @if (_example is not null)
+    {
+        <ExampleRunner Example="_example" />
+    }
+
+    <h2>Return a value or an error directly</h2>
+    <p>
+        Each case type of a union converts to the union implicitly. For a result that means a method can
+        simply return the value or the error, with no <code>Result.Success(...)</code> or
+        <code>Result.Failure(...)</code> wrapper:
+    </p>
+    <CodeBlock Code="@ConversionSnippet" />
+    <p>
+        The factory methods are still there and still the clearest choice when the types alone would be
+        ambiguous — see the edge cases below.
+    </p>
+
+    <h2>How QuickResult implements it</h2>
+    <p>
+        The one-line <code>union</code> declaration is shorthand: it generates a new struct that stores
+        its contents in a single <code>object?</code> field. That is ideal for a new type, but it didn't
+        fit an existing one. <code>Result&lt;T&gt;</code> is a class with an established API —
+        <code>Map</code>, <code>Bind</code>, <code>Match</code>, LINQ query support. A declared union
+        would have been a different type, a struct that couldn't keep the class's fields, and it
+        would have boxed every <code>int</code> stored in a <code>Result&lt;int&gt;</code>.
+    </p>
+    <p>
+        C# 15 has a second route for exactly this situation: a <em>custom union type</em>. Any class or
+        struct marked with <code>[Union]</code> that exposes a small set of members gets the same
+        language support as a declared union. QuickResult uses it in three steps.
+    </p>
+
+    <h3>1. Mark the existing class as a union</h3>
+    <p>
+        <code>Result&lt;T&gt;</code> gains the <code>[Union]</code> attribute and keeps every existing
+        member, so calls to <code>Map</code>, <code>Bind</code>, <code>Match</code> and the rest are
+        source-compatible. The one thing that changes for C# 15 callers is how type patterns read a
+        result, which is covered in the edge cases below.
+    </p>
+
+    <h3>2. Describe the cases through a member provider</h3>
+    <p>
+        The compiler needs to know the case types and how to read them. Rather than add those members
+        to <code>Result&lt;T&gt;</code>'s public surface, QuickResult declares them on a nested interface
+        named <code>IUnionMembers</code>, which the language recognises as a <em>union member
+        provider</em>, and implements that interface explicitly:
+    </p>
+    <CodeBlock Code="@ImplementationSnippet" />
+    <p>
+        The two <code>Create</code> methods tell the compiler what the cases are (<code>T</code> and
+        <code>IError</code>) and give it the implicit conversions. The two <code>TryGetValue</code>
+        overloads are how a <code>switch</code> arm reads the contents with its own type, so matching a
+        <code>Result&lt;int&gt;</code> never boxes the integer. <code>IUnionMembers</code> is public
+        because the language requires it, but it is compiler infrastructure, not something to call.
+    </p>
+
+    <h3>3. Work on .NET 10 as well as .NET 11</h3>
+    <p>
+        <code>UnionAttribute</code> ships in .NET 11, but the compiler recognises it by name. The .NET 10
+        build of QuickResult declares its own internal copy, so a project that targets .NET 10 gets
+        union behaviour as long as it is compiled with the C# 15 compiler.
+    </p>
+
+    <h2>What you need to use it</h2>
+    <table class="api-table">
+        <thead><tr><th>Your project targets</th><th>What to do</th></tr></thead>
+        <tbody>
+            <tr><td>.NET 11</td><td>Nothing. C# 15 is the default language version.</td></tr>
+            <tr><td>.NET 10</td><td>Build with the .NET 11 SDK and set <code>&lt;LangVersion&gt;15&lt;/LangVersion&gt;</code> (or <code>latest</code>).</td></tr>
+            <tr><td>.NET Framework, .NET 8, .NET 9</td><td>These use the .NET Standard 2.0 build, which is not a union. Everything else — <code>Match</code>, <code>Map</code>, <code>Bind</code>, LINQ — works the same.</td></tr>
+        </tbody>
+    </table>
+    <CodeBlock Code="dotnet add package QuickResult" />
+
+    <h2>Edge cases worth knowing</h2>
+    <ul>
+        <li>
+            <strong>Null success values.</strong> A successful result holding <code>null</code> matches
+            neither arm, so add a <code>null</code> arm when <code>T</code> is nullable. For the same
+            reason <code>result is null</code> is true for such a result; use <code>IsSuccess</code> to
+            tell a null success from anything else.
+        </li>
+        <li>
+            <strong>When T overlaps IError.</strong> If <code>T</code> is <code>IError</code>,
+            <code>object</code> or an error type, a type pattern can't tell success from failure: an
+            <code>IError</code> arm also matches a successful value that happens to be an error, and
+            a <code>T</code> arm also matches a failure whose error is a <code>T</code>. Use
+            <code>IsSuccess</code> or <code>Match</code> for those results. Implicit conversion
+            follows the same overlap: an error assigned to a <code>Result&lt;object&gt;</code> becomes
+            a failure, and assigning one to a <code>Result&lt;IError&gt;</code> does not compile, so
+            create those with the explicit <code>Success(...)</code> and <code>Failure(...)</code>
+            factories.
+        </li>
+        <li>
+            <strong>Patterns now look inside the result.</strong> Under C# 15,
+            <code>result is Result&lt;int&gt;</code> no longer compiles when <code>result</code> is
+            already a <code>Result&lt;int&gt;</code>, because the pattern tests the contents. Matching
+            from <code>object</code> (<code>obj is Result&lt;int&gt; r</code>) and property patterns
+            such as <code>result is { IsSuccess: true }</code> are unaffected.
+        </li>
+    </ul>
+
+    <h2>Match, switch, or LINQ?</h2>
+    <p>
+        Nothing was taken away, so use whichever reads best:
+    </p>
+    <ul>
+        <li><strong><code>switch</code></strong> when you are consuming a result at the edge of your code and want arms for specific error types.</li>
+        <li><strong><code>Match</code></strong> when you want one expression that also works on older target frameworks, or an async version (<code>MatchAsync</code>).</li>
+        <li><strong>LINQ query syntax</strong> when you are composing several steps and want the first failure to short-circuit the rest — including steps that mix sync and async.</li>
+    </ul>
+
+    <div class="next-steps">
+        <h2>Further reading</h2>
+        <ul>
+            <li><a href="reference#union">Union support in the API reference</a> — the complete list of rules and notes.</li>
+            <li><a href="examples#union-switch">All interactive examples</a> — run every feature live.</li>
+            <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/tutorials/unions" target="_blank" rel="noopener">Explore union types in C#</a> — Microsoft's tutorial.</li>
+            <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/union" target="_blank" rel="noopener">Union types</a> — the C# language reference.</li>
+            <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-15.0/unions" target="_blank" rel="noopener">Unions feature specification</a> — custom union types and member providers in full.</li>
+        </ul>
+    </div>
+</article>
+
+@code {
+    private IExample? _example;
+
+    protected override void OnInitialized()
+    {
+        _example = Registry.Find("union-switch").Match(e => (IExample?)e, _ => (IExample?)null);
+    }
+
+    private const string DeclarationSnippet =
+        """
+        // A Reading is a double, a bool, or a string. Nothing else.
+        public union Reading(double, bool, string);
+        """;
+
+    private const string ExhaustiveSwitchSnippet =
+        """
+        string Render(Reading reading) => reading switch
+        {
+            double measure => $"{measure:F1}",
+            bool isOn => isOn ? "on" : "off",
+            string text => text
+        };
+        """;
+
+    private const string ResultSwitchSnippet =
+        """
+        Result<int> result = ParsePositive(input);
+
+        string text = result switch
+        {
+            int value => $"Got {value}",
+            IError error => $"Failed: {error.Message}"
+        };
+
+        if (result is IError failure)
+            Console.WriteLine(failure.Message);
+        """;
+
+    private const string CustomErrorSnippet =
+        """
+        string status = result switch
+        {
+            int value => "200",
+            NotFoundError => "404",
+            IError => "500"
+        };
+        """;
+
+    private const string ConversionSnippet =
+        """
+        Result<int> ParsePositive(string text)
+        {
+            if (int.TryParse(text, out var number) && number > 0)
+                return number;                              // becomes Success(number)
+
+            return new Error("Not a positive integer");     // becomes Failure(...)
+        }
+        """;
+
+    private const string ImplementationSnippet =
+        """
+        [Union]
+        public sealed partial class Result<T> : Result<T>.IUnionMembers
+        {
+            object? IUnionMembers.Value => IsSuccess ? _value : _error;
+            bool IUnionMembers.HasValue { get { ... } }               // false for a null success
+
+            bool IUnionMembers.TryGetValue(out T value) { ... }       // read as a T, no boxing
+            bool IUnionMembers.TryGetValue(out IError error) { ... }  // read as an IError
+
+            static Result<T> IUnionMembers.Create(T value) => Success(value);
+            static Result<T> IUnionMembers.Create(IError error) => Failure(error);
+
+            // The compiler finds the union's members here, not on Result<T> itself.
+            public interface IUnionMembers
+            {
+                object? Value { get; }
+                bool HasValue { get; }
+                bool TryGetValue(out T value);
+                bool TryGetValue(out IError error);
+                static abstract Result<T> Create(T value);
+                static abstract Result<T> Create(IError error);
+            }
+        }
+        """;
+}

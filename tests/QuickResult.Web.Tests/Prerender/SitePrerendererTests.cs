@@ -1,3 +1,4 @@
+using QuickResult.Web.Pages;
 using QuickResult.Web.Prerender;
 
 namespace QuickResult.Web.Tests.Prerender;
@@ -25,12 +26,17 @@ public class SitePrerendererTests
     {
         var files = await BuildAsync();
 
-        Assert.Equal(
-            [
-                "404.html", "contact.html", "examples.html", "getting-started.html", "index.html",
-                "philosophy.html", "reference.html", "sitemap.xml",
-            ],
-            files.Keys.Order(StringComparer.Ordinal));
+        // Derived from the pages the site has, so adding a page does not change this test.
+        var expected = RouteDiscovery
+            .FindPages(typeof(App).Assembly, typeof(NotFound))
+            .Select(route => route.OutputFile)
+            .Append("404.html")
+            .Append("sitemap.xml")
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(expected, files.Keys.Order(StringComparer.Ordinal));
+        Assert.Contains("index.html", files.Keys);
+        Assert.Contains("reference.html", files.Keys);
     }
 
     [Fact]

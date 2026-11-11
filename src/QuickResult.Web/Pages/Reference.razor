@@ -6,7 +6,7 @@
 <article class="doc-page reference-page">
     <h1>API Reference</h1>
     <p class="lead">
-        The complete public surface of QuickResult 2.5.0 — one namespace, <code>QuickResult</code>,
+        The complete public surface of QuickResult 2.5 — one namespace, <code>QuickResult</code>,
         zero dependencies, targeting .NET 10 and .NET Standard 2.0. Descriptions are drawn from the package's
         own XML documentation.
     </p>
@@ -63,6 +63,10 @@
             A value or an error converts implicitly to a result, so methods can return either directly:
         </p>
         <CodeBlock Code="@UnionConversionSnippet" />
+        <p>
+            For the background — what C# union types are and how <code>Result&lt;T&gt;</code>
+            implements them — read <a href="csharp-unions">C# union types, and how Result&lt;T&gt; became one</a>.
+        </p>
         <h3>Notes</h3>
         <ul>
             <li>Matching a value-type result (such as <code>Result&lt;int&gt;</code>) does not box.</li>

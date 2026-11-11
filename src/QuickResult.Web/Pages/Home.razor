@@ -2,13 +2,15 @@
 @inject IExampleRegistry Registry
 
 <PageMeta Title="QuickResult — Result monad for C# with full LINQ query syntax"
-          Description="QuickResult is a lightweight, zero-dependency Result monad for C# and .NET with full LINQ query syntax for sync, async, and mixed flows. Try it live in your browser." />
+          Description="QuickResult is a lightweight, zero-dependency Result type for C# and .NET: the Result pattern with full LINQ query syntax for sync, async and mixed flows, and C# union support. Try it live in your browser."
+          StructuredData="@StructuredData.Home" />
 
 <div class="hero">
     <h1>Handle failure like it's <em>data</em>.<br />Because it is.</h1>
     <p class="hero-tagline">
-        QuickResult is a lightweight Result monad for C# with full LINQ query syntax for
-        sync, async, and mixed flows. Zero dependencies. .NET 10+ and .NET Standard 2.0.
+        QuickResult is a lightweight <code>Result&lt;T&gt;</code> type for C#: the Result pattern with
+        full LINQ query syntax for sync, async, and mixed flows. Zero dependencies.
+        .NET 10+ and .NET Standard 2.0.
     </p>
 
     <div class="install-command">
@@ -64,7 +66,7 @@
             <p>
                 On .NET 10+, <code>Result&lt;T&gt;</code> is a C# union of <code>T</code> and
                 <code>IError</code>: <code>switch</code> on it by type with C# 15 and the compiler
-                checks you handled both cases.
+                checks you handled both cases. <a href="csharp-unions">How it works →</a>
             </p>
         </div>
         <div class="feature-card">

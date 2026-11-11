@@ -1,0 +1,26 @@
+# QuickResult
+
+> QuickResult is a lightweight, zero-dependency Result<T> type for C# and .NET. It implements the Result pattern (a value or an error, instead of exceptions for expected failures) with full LINQ query syntax for synchronous, asynchronous and mixed flows. From version 2.5, Result<T> is also a C# 15 union of T and IError on .NET 10 and later.
+
+Install with `dotnet add package QuickResult`. The package targets .NET 10 and .NET Standard 2.0 (so it also runs on .NET Framework 4.7.2+, .NET 8 and .NET 9). MIT licensed.
+
+Key facts:
+
+- Create results with `Result.Success(value)`, `Result.Failure<T>(error)`, `Result.Try(...)`, `Result.TryAsync(...)` and `Result.FromNullable(value, error)`.
+- Consume them with `Match`, `MatchAsync`, `ValueOr`, or (C# 15, .NET 10+) a `switch` on the result by type: `result switch { int v => ..., IError e => ... }`.
+- Compose them with `Map`, `Bind`, `MapFailure`, the `|` fallback operator, and LINQ `from`/`select` queries that can mix `Result<T>` and `Task<Result<T>>` steps and are awaited once.
+- Errors are values: implement `IError` (a single `string Message` property) for domain-specific error types. Plain strings convert to the built-in `Error` type.
+- Guards `FailIfTrue` / `FailIfFalse` turn boolean checks into failures inside a query.
+
+## Documentation
+
+- [Getting Started](https://quickresult.net/getting-started): install and a first composed Result flow
+- [API Reference](https://quickresult.net/reference): every public type and method
+- [C# union types and Result<T>](https://quickresult.net/csharp-unions): what C# 15 unions are and how Result<T> implements them
+- [Interactive Examples](https://quickresult.net/examples): runnable examples of every feature
+- [Philosophy & History](https://quickresult.net/philosophy): why model failure as a value
+
+## Source and package
+
+- [NuGet package](https://www.nuget.org/packages/QuickResult)
+- [GitHub repository](https://github.com/aaroncpina/QuickResult): source and README

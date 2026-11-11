@@ -19,11 +19,21 @@
     <meta property="og:title" content="@Title" />
     <meta property="og:description" content="@Description" />
     <meta property="og:image" content="@PreviewImageUrl" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="QuickResult: a Result type for C# with LINQ query syntax" />
     <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="@IconUrl" />
+    @if (StructuredData is not null)
+    {
+        @StructuredDataScript
+    }
 </HeadContent>
 
 @code {
-    private static readonly string PreviewImageUrl = new Uri(SiteInfo.Origin, "icon-192.png").AbsoluteUri;
+    // The wide image is what most link previews show; the summary card wants a square one.
+    private static readonly string PreviewImageUrl = new Uri(SiteInfo.Origin, "og-image.png").AbsoluteUri;
+    private static readonly string IconUrl = new Uri(SiteInfo.Origin, "icon-192.png").AbsoluteUri;
 
     [Parameter, EditorRequired]
     public string Title { get; set; } = string.Empty;
@@ -34,6 +44,17 @@
     /// <summary>Set on pages that have no address of their own, such as the not-found page.</summary>
     [Parameter]
     public bool NoIndex { get; set; }
+
+    /// <summary>
+    /// Optional schema.org JSON-LD describing the page. It is written into the head as-is,
+    /// so it must come from trusted, constant JSON (see <see cref="QuickResult.Web.StructuredData"/>).
+    /// </summary>
+    [Parameter]
+    public string? StructuredData { get; set; }
+
+    // Razor does not allow a literal script tag in a component, so the element is emitted as markup.
+    private MarkupString StructuredDataScript =>
+        new($"<script type=\"application/ld+json\">{StructuredData}</script>");
 
     // Always the public address without query or fragment, whichever host is serving the page.
     private string CanonicalUrl =>

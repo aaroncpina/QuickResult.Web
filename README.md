@@ -17,7 +17,7 @@ src/QuickResult.Web/          Blazor WASM site
   Services/                   Dependency-free C# syntax highlighter
   Components/                 CodeBlock, ExampleRunner
   Pages/                      Home, Getting Started, Examples, Reference,
-                              Philosophy, Contact, 404
+                              C# Unions, Philosophy, Contact, 404
 src/QuickResult.Web.Prerender/ Build-time tool: renders each page to static HTML,
                               plus 404.html and sitemap.xml
 tests/QuickResult.Web.Tests/  xUnit + bUnit suite (TDD; tests are immutable)
